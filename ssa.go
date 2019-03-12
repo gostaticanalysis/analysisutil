@@ -1,6 +1,6 @@
 package analysisutil
 
-import "honnef.co/go/tools/ssa"
+import "golang.org/x/tools/go/ssa"
 
 // IfInstr returns *ssa.If which is contained in the block b.
 // If the block b has not any if instruction, IfInstr returns nil.
