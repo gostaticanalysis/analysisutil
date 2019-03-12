@@ -18,7 +18,7 @@ func IfInstr(b *ssa.BasicBlock) *ssa.If {
 }
 
 // Phi returns phi values which are contained in the block b.
-func Phi(b *ssa.BasicBlock) (phis []*Phi) {
+func Phi(b *ssa.BasicBlock) (phis []*ssa.Phi) {
 	for _, instr := range b.Instrs {
 		if phi, ok := instr.(*ssa.Phi); ok {
 			phis = append(phis, phi)
