@@ -1,9 +1,14 @@
 package analysisutil_test
 
 import (
+	"fmt"
+	"go/types"
+	"path/filepath"
 	"testing"
 
 	"github.com/gostaticanalysis/analysisutil"
+	"golang.org/x/tools/go/packages"
+	"golang.org/x/tools/go/packages/packagestest"
 )
 
 func TestRemoveVendor(t *testing.T) {
@@ -28,4 +33,56 @@ func TestRemoveVendor(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLookupFromImports(t *testing.T) {
+	tests := []struct {
+		path, name string
+		found      bool
+	}{
+		{"fmt", "Println", true},
+		{"b", "Msg", true},
+		{"strings", "Join", false},
+		{"b", "Func", false},
+	}
+
+	testdata := filepath.Join("testdata", "lookupfromimports")
+	pkg := loadPkg(t, testdata, "a")
+	for _, tt := range tests {
+		tt := tt
+		name := fmt.Sprintf("%s.%s", tt.path, tt.name)
+		t.Run(name, func(t *testing.T) {
+			obj := analysisutil.LookupFromImports(pkg.Imports(), tt.path, tt.name)
+			switch {
+			case obj == nil && tt.found:
+				t.Error("not found")
+			case obj != nil && !tt.found:
+				t.Error("want not found but found:", obj)
+			}
+		})
+	}
+}
+
+func loadPkg(t *testing.T, testdata, pkg string) *types.Package {
+	t.Helper()
+
+	exported := packagestest.Export(t, packagestest.GOPATH, []packagestest.Module{{
+		Name:  pkg,
+		Files: packagestest.MustCopyFileTree(testdata),
+	}})
+	defer exported.Cleanup()
+
+	conf := exported.Config
+	conf.Mode = packages.LoadAllSyntax
+	pkgs, err := packages.Load(conf, pkg)
+	if err != nil {
+		t.Fatal("unexpected error:", err)
+	}
+	if len(pkgs) == 0 {
+		t.Fatal("cannot load package", pkg)
+	}
+	if len(pkgs[0].Errors) != 0 {
+		t.Fatal("unexpected error:", pkgs[0].Errors)
+	}
+	return pkgs[0].Types
 }
