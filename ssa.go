@@ -1,6 +1,10 @@
 package analysisutil
 
-import "golang.org/x/tools/go/ssa"
+import (
+	"go/types"
+
+	"golang.org/x/tools/go/ssa"
+)
 
 // IfInstr returns *ssa.If which is contained in the block b.
 // If the block b has not any if instruction, IfInstr returns nil.
@@ -28,4 +32,19 @@ func Phi(b *ssa.BasicBlock) (phis []*ssa.Phi) {
 		}
 	}
 	return
+}
+
+// Called returns true when f is called in the call.
+func Called(call ssa.CallInstruction, f *types.Func) bool {
+	common := call.Common()
+	if common == nil {
+		return false
+	}
+
+	callee := common.StaticCallee()
+	if callee == nil {
+		return false
+	}
+
+	return callee.Object == f
 }
