@@ -46,5 +46,10 @@ func Called(call ssa.CallInstruction, f *types.Func) bool {
 		return false
 	}
 
-	return callee.Object == f
+	fn, ok := callee.Object().(*types.Func)
+	if !ok {
+		return false
+	}
+
+	return fn == f
 }
