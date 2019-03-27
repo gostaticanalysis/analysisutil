@@ -31,7 +31,7 @@ func Called(instr ssa.Instruction, recv ssa.Value, f *types.Func) bool {
 	}
 
 	if recv != nil &&
-		common.Method != nil &&
+		common.Signature().Recv() != nil &&
 		(len(common.Args) == 0 || common.Args[0] != recv) {
 		return false
 	}
@@ -39,34 +39,38 @@ func Called(instr ssa.Instruction, recv ssa.Value, f *types.Func) bool {
 	return fn == f
 }
 
-// CalledFrom return whether receiver's method is called in an instruction
-// which belogns to after i-th instructions,  or in succsor blocks of b.
-func CalledFrom(b *ssa.BasicBlock, i int, receiver types.Type, methods ...*types.Func) bool {
+// CalledFrom checks whether receiver's method is called in an instruction
+// which belogns to after i-th instructions, or in succsor blocks of b.
+// The first result is above value.
+// The second result is whether type of i-th instruction does not much receiver
+// or matches with ignore cases.
+func CalledFrom(b *ssa.BasicBlock, i int, receiver types.Type, methods ...*types.Func) (called, ok bool) {
 
-	if b == nil || i < 0 || i <= len(b.Instrs) ||
+	if b == nil || i < 0 || i >= len(b.Instrs) ||
 		receiver == nil || len(methods) == 0 {
-		return false
+		return false, false
 	}
 
 	v, ok := b.Instrs[i].(ssa.Value)
 	if !ok {
-		return false
+		return false, false
 	}
 
 	if !types.Identical(v.Type(), receiver) {
-		return false
+		return false, false
 	}
 
 	from := &calledFrom{recv: v, fs: methods}
 	if from.ignored() {
-		return false
+		return false, false
 	}
 
-	if from.instrs(b.Instrs[i:]) {
-		return false
+	if from.instrs(b.Instrs[i:]) ||
+		from.succs(b) {
+		return true, true
 	}
 
-	return true
+	return false, true
 }
 
 type calledFrom struct {
@@ -82,12 +86,21 @@ func (c *calledFrom) ignored() bool {
 	}
 
 	for _, ref := range *refs {
-		if c.isRet(ref) || c.isArg(ref) {
+		if !c.isOwn(ref) &&
+			(c.isRet(ref) || c.isArg(ref)) {
 			return true
 		}
 	}
 
 	return false
+}
+
+func (c *calledFrom) isOwn(instr ssa.Instruction) bool {
+	v, ok := instr.(ssa.Value)
+	if !ok {
+		return false
+	}
+	return v == c.recv
 }
 
 func (c *calledFrom) isRet(instr ssa.Instruction) bool {
@@ -119,7 +132,7 @@ func (c *calledFrom) isArg(instr ssa.Instruction) bool {
 	}
 
 	args := common.Args
-	if common.Method != nil {
+	if common.Signature().Recv() != nil {
 		args = args[1:]
 	}
 
