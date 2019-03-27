@@ -6,9 +6,19 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
-// Called returns true when f is called in the instr.
+// CalledChecker checks a function is called.
+// See From and Func.
+type CalledChecker struct {
+	Ignore func(instr ssa.Instruction) bool
+}
+
+// Func returns true when f is called in the instr.
 // If recv is not nil, Called also checks the receiver.
-func Called(instr ssa.Instruction, recv ssa.Value, f *types.Func) bool {
+func (c *CalledChecker) Func(instr ssa.Instruction, recv ssa.Value, f *types.Func) bool {
+
+	if c.Ignore != nil && c.Ignore(instr) {
+		return false
+	}
 
 	call, ok := instr.(ssa.CallInstruction)
 	if !ok {
@@ -39,13 +49,12 @@ func Called(instr ssa.Instruction, recv ssa.Value, f *types.Func) bool {
 	return fn == f
 }
 
-// CalledFrom checks whether receiver's method is called in an instruction
+// From checks whether receiver's method is called in an instruction
 // which belogns to after i-th instructions, or in succsor blocks of b.
 // The first result is above value.
 // The second result is whether type of i-th instruction does not much receiver
 // or matches with ignore cases.
-func CalledFrom(b *ssa.BasicBlock, i int, receiver types.Type, methods ...*types.Func) (called, ok bool) {
-
+func (c *CalledChecker) From(b *ssa.BasicBlock, i int, receiver types.Type, methods ...*types.Func) (called, ok bool) {
 	if b == nil || i < 0 || i >= len(b.Instrs) ||
 		receiver == nil || len(methods) == 0 {
 		return false, false
@@ -60,7 +69,7 @@ func CalledFrom(b *ssa.BasicBlock, i int, receiver types.Type, methods ...*types
 		return false, false
 	}
 
-	from := &calledFrom{recv: v, fs: methods}
+	from := &calledFrom{recv: v, fs: methods, ignore: c.Ignore}
 	if from.ignored() {
 		return false, false
 	}
@@ -74,9 +83,10 @@ func CalledFrom(b *ssa.BasicBlock, i int, receiver types.Type, methods ...*types
 }
 
 type calledFrom struct {
-	recv ssa.Value
-	fs   []*types.Func
-	done map[*ssa.BasicBlock]bool
+	recv   ssa.Value
+	fs     []*types.Func
+	done   map[*ssa.BasicBlock]bool
+	ignore func(ssa.Instruction) bool
 }
 
 func (c *calledFrom) ignored() bool {
@@ -87,7 +97,8 @@ func (c *calledFrom) ignored() bool {
 
 	for _, ref := range *refs {
 		if !c.isOwn(ref) &&
-			(c.isRet(ref) || c.isArg(ref)) {
+			((c.ignore != nil && c.ignore(ref)) ||
+				c.isRet(ref) || c.isArg(ref)) {
 			return true
 		}
 	}
@@ -177,4 +188,19 @@ func (c *calledFrom) succs(b *ssa.BasicBlock) bool {
 	}
 
 	return true
+}
+
+// CalledFrom checks whether receiver's method is called in an instruction
+// which belogns to after i-th instructions, or in succsor blocks of b.
+// The first result is above value.
+// The second result is whether type of i-th instruction does not much receiver
+// or matches with ignore cases.
+func CalledFrom(b *ssa.BasicBlock, i int, receiver types.Type, methods ...*types.Func) (called, ok bool) {
+	return new(CalledChecker).From(b, i, receiver, methods...)
+}
+
+// Called returns true when f is called in the instr.
+// If recv is not nil, Called also checks the receiver.
+func Called(instr ssa.Instruction, recv ssa.Value, f *types.Func) bool {
+	return new(CalledChecker).Func(instr, recv, f)
 }
