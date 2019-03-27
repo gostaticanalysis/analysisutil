@@ -1,8 +1,6 @@
 package analysisutil
 
 import (
-	"go/types"
-
 	"golang.org/x/tools/go/ssa"
 )
 
@@ -32,30 +30,4 @@ func Phi(b *ssa.BasicBlock) (phis []*ssa.Phi) {
 		}
 	}
 	return
-}
-
-// Called returns true when f is called in the call.
-// If recv is not nil, Called also checks the receiver.
-func Called(call ssa.CallInstruction, recv ssa.Value, f *types.Func) bool {
-	common := call.Common()
-	if common == nil {
-		return false
-	}
-
-	callee := common.StaticCallee()
-	if callee == nil {
-		return false
-	}
-
-	fn, ok := callee.Object().(*types.Func)
-	if !ok {
-		return false
-	}
-
-	if recv != nil &&
-		(len(common.Args) == 0 || common.Args[0] != recv) {
-		return false
-	}
-
-	return fn == f
 }
