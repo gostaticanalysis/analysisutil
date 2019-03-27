@@ -35,7 +35,8 @@ func Phi(b *ssa.BasicBlock) (phis []*ssa.Phi) {
 }
 
 // Called returns true when f is called in the call.
-func Called(call ssa.CallInstruction, f *types.Func) bool {
+// If recv is not nil, Called also checks the receiver.
+func Called(call ssa.CallInstruction, recv ssa.Value, f *types.Func) bool {
 	common := call.Common()
 	if common == nil {
 		return false
@@ -48,6 +49,11 @@ func Called(call ssa.CallInstruction, f *types.Func) bool {
 
 	fn, ok := callee.Object().(*types.Func)
 	if !ok {
+		return false
+	}
+
+	if recv != nil &&
+		(len(common.Args) == 0 || common.Args[0] != recv) {
 		return false
 	}
 
