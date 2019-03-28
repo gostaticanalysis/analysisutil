@@ -32,8 +32,13 @@ func Phi(b *ssa.BasicBlock) (phis []*ssa.Phi) {
 	return
 }
 
-// Returns returns a slice of *ssa.Return in fn.
-func Returns(fn *ssa.Function) []*ssa.Return {
+// Returns returns a slice of *ssa.Return in the function.
+func Returns(v ssa.Value) []*ssa.Return {
+	fn, ok := v.(*ssa.Function)
+	if !ok {
+		return nil
+	}
+
 	var rets []*ssa.Return
 	done := map[*ssa.BasicBlock]bool{}
 	for _, b := range fn.Blocks {
@@ -45,5 +50,6 @@ func Returns(fn *ssa.Function) []*ssa.Return {
 			rets = append(rets, instr)
 		}
 	}
+
 	return rets
 }
