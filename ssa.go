@@ -1,6 +1,8 @@
 package analysisutil
 
 import (
+	"fmt"
+
 	"golang.org/x/tools/go/ssa"
 )
 
@@ -38,26 +40,25 @@ func Returns(v ssa.Value) []*ssa.Return {
 	if !ok {
 		return nil
 	}
-
 	var rets []*ssa.Return
 	done := map[*ssa.BasicBlock]bool{}
-
-	f := func(b *ssa.BasicBlock) {
-		if done[b] && len(b.Instrs) != 1 {
-			return
-		}
-		switch instr := b.Instrs[0].(type) {
-		case *ssa.Return:
-			rets = append(rets, instr)
-		}
-	}
-
 	for _, b := range fn.Blocks {
-		f(b)
-		for _, s := range b.Succs {
-			f(s)
-		}
+		rets = append(rets, returnsInBlock(b, done)...)
 	}
-
 	return rets
+}
+
+func returnsInBlock(b *ssa.BasicBlock, done map[*ssa.BasicBlock]bool) (rets []*ssa.Return) {
+	if done[b] && len(b.Instrs) != 0 {
+		fmt.Println(b.Instrs)
+		return
+	}
+	switch instr := b.Instrs[len(b.Instrs)-1].(type) {
+	case *ssa.Return:
+		rets = append(rets, instr)
+	}
+	for _, s := range b.Succs {
+		rets = append(rets, returnsInBlock(s, done)...)
+	}
+	return
 }
