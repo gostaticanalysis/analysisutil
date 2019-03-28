@@ -6,6 +6,13 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
+var errType = types.Universe.Lookup("error").Type().Underlying().(*types.Interface)
+
+// ImplementsError return whether t implements error interface.
+func ImplementsError(t types.Type) bool {
+	return types.Implements(t, errType)
+}
+
 // ObjectOf returns types.Object by given name in the package.
 func ObjectOf(pass *analysis.Pass, pkg, name string) types.Object {
 	return LookupFromImports(pass.Pkg.Imports(), pkg, name)
