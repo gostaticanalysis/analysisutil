@@ -41,13 +41,21 @@ func Returns(v ssa.Value) []*ssa.Return {
 
 	var rets []*ssa.Return
 	done := map[*ssa.BasicBlock]bool{}
-	for _, b := range fn.Blocks {
+
+	f := func(b *ssa.BasicBlock) {
 		if done[b] && len(b.Instrs) != 1 {
-			continue
+			return
 		}
 		switch instr := b.Instrs[0].(type) {
 		case *ssa.Return:
 			rets = append(rets, instr)
+		}
+	}
+
+	for _, b := range fn.Blocks {
+		f(b)
+		for _, s := range b.Succs {
+			f(s)
 		}
 	}
 
