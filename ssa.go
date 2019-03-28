@@ -31,3 +31,19 @@ func Phi(b *ssa.BasicBlock) (phis []*ssa.Phi) {
 	}
 	return
 }
+
+// Returns returns a slice of *ssa.Return in fn.
+func Returns(fn *ssa.Function) []*ssa.Return {
+	var rets []*ssa.Return
+	done := map[*ssa.BasicBlock]bool{}
+	for _, b := range fn.Blocks {
+		if done[b] && len(b.Instrs) != 1 {
+			continue
+		}
+		switch instr := b.Instrs[0].(type) {
+		case *ssa.Return:
+			rets = append(rets, instr)
+		}
+	}
+	return rets
+}
