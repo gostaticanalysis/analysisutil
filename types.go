@@ -51,3 +51,21 @@ func MethodOf(typ types.Type, name string) *types.Func {
 	}
 	return nil
 }
+
+// see: https://github.com/golang/go/issues/19670
+func identical(x, y types.Type) (ret bool) {
+	defer func() {
+		r := recover()
+		switch r := r.(type) {
+		case string:
+			if r == "unreachable" {
+				ret = false
+				return
+			}
+		case nil:
+			return
+		}
+		panic(r)
+	}()
+	return types.Identical(x, y)
+}

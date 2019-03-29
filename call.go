@@ -65,7 +65,7 @@ func (c *CalledChecker) From(b *ssa.BasicBlock, i int, receiver types.Type, meth
 		return false, false
 	}
 
-	if !types.Identical(v.Type(), receiver) {
+	if !identical(v.Type(), receiver) {
 		return false, false
 	}
 
