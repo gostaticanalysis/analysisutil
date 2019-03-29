@@ -36,10 +36,16 @@ func Phi(b *ssa.BasicBlock) (phis []*ssa.Phi) {
 
 // Returns returns a slice of *ssa.Return in the function.
 func Returns(v ssa.Value) []*ssa.Return {
-	fn, ok := v.(*ssa.Function)
-	if !ok {
+	var fn *ssa.Function
+	switch v := v.(type) {
+	case *ssa.Function:
+		fn = v
+	case *ssa.MakeClosure:
+		return Returns(v.Fn)
+	default:
 		return nil
 	}
+
 	var rets []*ssa.Return
 	done := map[*ssa.BasicBlock]bool{}
 	for _, b := range fn.Blocks {
