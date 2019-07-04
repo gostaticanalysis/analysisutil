@@ -53,14 +53,18 @@ func Returns(v ssa.Value) []*ssa.Return {
 }
 
 func returnsInBlock(b *ssa.BasicBlock, done map[*ssa.BasicBlock]bool) (rets []*ssa.Return) {
-	if done[b] && len(b.Instrs) != 0 {
+	if done[b] {
 		return
 	}
 	done[b] = true
-	switch instr := b.Instrs[len(b.Instrs)-1].(type) {
-	case *ssa.Return:
-		rets = append(rets, instr)
+
+	if len(b.Instrs) != 0 {
+		switch instr := b.Instrs[len(b.Instrs)-1].(type) {
+		case *ssa.Return:
+			rets = append(rets, instr)
+		}
 	}
+
 	for _, s := range b.Succs {
 		rets = append(rets, returnsInBlock(s, done)...)
 	}

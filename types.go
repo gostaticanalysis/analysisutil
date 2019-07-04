@@ -69,3 +69,20 @@ func identical(x, y types.Type) (ret bool) {
 	}()
 	return types.Identical(x, y)
 }
+
+// Interfaces returns a slice of interfaces which are declared in the package.
+func Interfaces(pkg *types.Package) map[string]*types.Interface {
+	ifs := map[string]*types.Interface{}
+
+	for _, n := range pkg.Scope().Names() {
+		o := pkg.Scope().Lookup(n)
+		if o != nil {
+			i, ok := o.Type().Underlying().(*types.Interface)
+			if ok {
+				ifs[n] = i
+			}
+		}
+	}
+
+	return ifs
+}
