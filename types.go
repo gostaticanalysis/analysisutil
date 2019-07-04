@@ -70,7 +70,7 @@ func identical(x, y types.Type) (ret bool) {
 	return types.Identical(x, y)
 }
 
-// Interfaces returns a slice of interfaces which are declared in the package.
+// Interfaces returns a map of interfaces which are declared in the package.
 func Interfaces(pkg *types.Package) map[string]*types.Interface {
 	ifs := map[string]*types.Interface{}
 
