@@ -86,3 +86,35 @@ func Interfaces(pkg *types.Package) map[string]*types.Interface {
 
 	return ifs
 }
+
+// Structs returns a map of structs which are declared in the package.
+func Structs(pkg *types.Package) map[string]*types.Struct {
+	structs := map[string]*types.Struct{}
+
+	for _, n := range pkg.Scope().Names() {
+		o := pkg.Scope().Lookup(n)
+		if o != nil {
+			s, ok := o.Type().Underlying().(*types.Struct)
+			if ok {
+				structs[n] = s
+			}
+		}
+	}
+
+	return structs
+}
+
+// HasField returns whether the struct has the field.
+func HasField(s *types.Struct, f *types.Var) bool {
+	if s == nil || f == nil {
+		return false
+	}
+
+	for i := 0; i < s.NumFields(); i++ {
+		if s.Field(i) == f {
+			return true
+		}
+	}
+
+	return false
+}
