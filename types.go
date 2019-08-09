@@ -1,6 +1,7 @@
 package analysisutil
 
 import (
+	"go/ast"
 	"go/types"
 
 	"golang.org/x/tools/go/analysis"
@@ -117,4 +118,70 @@ func HasField(s *types.Struct, f *types.Var) bool {
 	}
 
 	return false
+}
+
+func TypesInfo(info ...*types.Info) *types.Info {
+	if len(info) == 0 {
+		return nil
+	}
+
+	var merged types.Info
+	for i := range info {
+		mergeTypesInfo(&merged, info[i])
+	}
+
+	return &merged
+}
+
+func mergeTypesInfo(i1, i2 *types.Info) {
+	// Types
+	if i1.Types == nil && i2.Types != nil {
+		i1.Types = map[ast.Expr]types.TypeAndValue{}
+	}
+	for expr, tv := range i2.Types {
+		i1.Types[expr] = tv
+	}
+
+	// Defs
+	if i1.Defs == nil && i2.Defs != nil {
+		i1.Defs = map[*ast.Ident]types.Object{}
+	}
+	for ident, obj := range i2.Defs {
+		i1.Defs[ident] = obj
+	}
+
+	// Uses
+	if i1.Uses == nil && i2.Uses != nil {
+		i1.Uses = map[*ast.Ident]types.Object{}
+	}
+	for ident, obj := range i2.Uses {
+		i1.Uses[ident] = obj
+	}
+
+	// Implicits
+	if i1.Implicits == nil && i2.Implicits != nil {
+		i1.Implicits = map[ast.Node]types.Object{}
+	}
+	for n, obj := range i2.Implicits {
+		i1.Implicits[n] = obj
+	}
+
+	// Selections
+	if i1.Selections == nil && i2.Selections != nil {
+		i1.Selections = map[*ast.SelectorExpr]*types.Selection{}
+	}
+	for expr, sel := range i2.Selections {
+		i1.Selections[expr] = sel
+	}
+
+	// Scopes
+	if i1.Scopes == nil && i2.Scopes != nil {
+		i1.Scopes = map[ast.Node]*types.Scope{}
+	}
+	for n, s := range i2.Scopes {
+		i1.Scopes[n] = s
+	}
+
+	// InitOrder
+	i1.InitOrder = append(i1.InitOrder, i2.InitOrder...)
 }
