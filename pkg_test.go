@@ -7,6 +7,9 @@ import (
 	"testing"
 
 	"github.com/gostaticanalysis/analysisutil"
+	"golang.org/x/tools/go/analysis"
+	"golang.org/x/tools/go/analysis/analysistest"
+	"golang.org/x/tools/go/analysis/passes/buildssa"
 	"golang.org/x/tools/go/packages"
 	"golang.org/x/tools/go/packages/packagestest"
 )
@@ -85,4 +88,42 @@ func loadPkg(t *testing.T, testdata, pkg string) *types.Package {
 		t.Fatal("unexpected error:", pkgs[0].Errors)
 	}
 	return pkgs[0].Types
+}
+
+func TestPkgUsedInFunc(t *testing.T) {
+	tests := []struct {
+		path string
+		used bool
+	}{
+		{"fmt", true},
+		{"b", true},
+		{"a", false},
+		{"log", false},
+	}
+
+	run := func(pass *analysis.Pass) (interface{}, error) {
+		f := pass.ResultOf[buildssa.Analyzer].(*buildssa.SSA).SrcFuncs[0]
+		for _, tt := range tests {
+			t.Run(tt.path, func(t *testing.T) {
+				used := analysisutil.PkgUsedInFunc(pass, tt.path, f)
+				if used && !tt.used {
+					t.Error("not used")
+				} else if !used && tt.used {
+					t.Error("used")
+				}
+			})
+		}
+		return nil, nil
+	}
+
+	var analyzer = &analysis.Analyzer{
+		Run:              run,
+		RunDespiteErrors: true,
+		Requires: []*analysis.Analyzer{
+			buildssa.Analyzer,
+		},
+	}
+
+	testdata := analysistest.TestData()
+	analysistest.Run(t, testdata, analyzer, "pkgused")
 }
