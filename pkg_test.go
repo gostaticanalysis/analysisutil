@@ -136,7 +136,7 @@ func TestPkgUsedInPass(t *testing.T) {
 		{"fmt", true},
 		{"b", true},
 		{"a", false},
-		{"log", false},
+		{"log", true},
 	}
 
 	run := func(pass *analysis.Pass) (interface{}, error) {

@@ -1,4 +1,4 @@
-package a
+package pkgused
 
 import (
 	"b"
