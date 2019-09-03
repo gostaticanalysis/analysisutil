@@ -66,3 +66,32 @@ func Test_Phi(t *testing.T) {
 		})
 	}
 }
+
+func Test_BinOp(t *testing.T) {
+	type I = ssa.Instruction
+	var bo1, bo2 ssa.BinOp
+	tests := []struct {
+		name   string
+		instrs []ssa.Instruction
+		want   []*ssa.BinOp
+	}{
+		{"empty", []I{}, nil},
+		{"B", []I{&bo1}, []*ssa.BinOp{&bo1}},
+		{"B_", []I{&bo1, nil}, []*ssa.BinOp{&bo1}},
+		{"_B", []I{nil, &bo1}, nil},
+		{"BB", []I{&bo1, &bo2}, []*ssa.BinOp{&bo1, &bo1}},
+		{"B_B", []I{&bo1, nil, &bo2}, []*ssa.BinOp{&bo1}},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			var b ssa.BasicBlock
+			b.Instrs = tt.instrs
+			got := analysisutil.BinOp(&b)
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Errorf("want %#v but got %#v", tt.want, got)
+			}
+		})
+	}
+}
