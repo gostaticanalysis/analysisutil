@@ -5,16 +5,16 @@ import (
 	"log"
 	"testing"
 
-	"github.com/Matts966/refsafe/analysisutil"
+	"github.com/gostaticanalysis/analysisutil"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/analysistest"
 	"golang.org/x/tools/go/analysis/passes/buildssa"
 )
 
 var (
-	st          types.Type
-	close       *types.Func
-	doSomething *types.Func
+	st                     types.Type
+	close                  *types.Func
+	doSomethingAndReturnSt *types.Func
 )
 
 var Analyzer = &analysis.Analyzer{
@@ -35,13 +35,13 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		pass.ResultOf[buildssa.Analyzer].(*buildssa.SSA).Pkg.Pkg,
 	}, "b", "st").Type().(*types.Named)
 	close = analysisutil.MethodOf(st, "b.close")
-	doSomething = analysisutil.MethodOf(st, "b.doSomething")
+	doSomethingAndReturnSt = analysisutil.MethodOf(st, "b.doSomethingAndReturnSt")
 
 	funcs := pass.ResultOf[buildssa.Analyzer].(*buildssa.SSA).SrcFuncs
 	for _, f := range funcs {
 		for _, b := range f.Blocks {
 			for i, instr := range b.Instrs {
-				if !analysisutil.Called(instr, nil, doSomething) {
+				if !analysisutil.Called(instr, nil, doSomethingAndReturnSt) {
 					continue
 				}
 				called, ok := analysisutil.CalledFrom(b, i, st, close)
