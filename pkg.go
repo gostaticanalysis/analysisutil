@@ -56,27 +56,21 @@ func PkgUsedInFunc(pass *analysis.Pass, pkgPath string, f *ssa.Function) bool {
 	return false
 }
 
-// PkgUsedInFunc returns true when the given f imports the pkg.
-func PkgUsedIn(pass *analysis.Pass, pkgPath string, f *ssa.Function) bool {
-	if f == nil {
+// PkgUsedInPass returns true when the given pass imports the pkg.
+func PkgUsedInPass(pkgPath string, pass *analysis.Pass) bool {
+	fs := pass.Files
+	if fs == nil {
 		return false
 	}
-	fo := f.Object()
-	if fo == nil {
-		return false
-	}
-
-	ff := analysisutil.File(pass, fo.Pos())
-	if ff == nil {
-		return false
-	}
-	for _, i := range ff.Imports {
-		path, err := strconv.Unquote(i.Path.Value)
-		if err != nil {
-			continue
-		}
-		if analysisutil.RemoveVendor(path) == pkgPath {
-			return true
+	for _, f := range fs {
+		for _, i := range f.Imports {
+			path, err := strconv.Unquote(i.Path.Value)
+			if err != nil {
+				continue
+			}
+			if analysisutil.RemoveVendor(path) == pkgPath {
+				return true
+			}
 		}
 	}
 	return false

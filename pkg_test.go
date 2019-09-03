@@ -127,3 +127,40 @@ func TestPkgUsedInFunc(t *testing.T) {
 	testdata := analysistest.TestData()
 	analysistest.Run(t, testdata, analyzer, "pkgused")
 }
+
+func TestPkgUsedInPass(t *testing.T) {
+	tests := []struct {
+		path string
+		used bool
+	}{
+		{"fmt", true},
+		{"b", true},
+		{"a", false},
+		{"log", false},
+	}
+
+	run := func(pass *analysis.Pass) (interface{}, error) {
+		for _, tt := range tests {
+			t.Run(tt.path, func(t *testing.T) {
+				used := analysisutil.PkgUsedInPass(tt.path, pass)
+				if used && !tt.used {
+					t.Error("not used")
+				} else if !used && tt.used {
+					t.Error("used")
+				}
+			})
+		}
+		return nil, nil
+	}
+
+	var analyzer = &analysis.Analyzer{
+		Run:              run,
+		RunDespiteErrors: true,
+		Requires: []*analysis.Analyzer{
+			buildssa.Analyzer,
+		},
+	}
+
+	testdata := analysistest.TestData()
+	analysistest.Run(t, testdata, analyzer, "pkgused")
+}
