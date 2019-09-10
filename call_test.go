@@ -2,7 +2,6 @@ package analysisutil_test
 
 import (
 	"go/types"
-	"log"
 	"testing"
 
 	"github.com/gostaticanalysis/analysisutil"
@@ -17,7 +16,7 @@ var (
 	doSomethingAndReturnSt *types.Func
 )
 
-var Analyzer = &analysis.Analyzer{
+var analyzer = &analysis.Analyzer{
 	Name: "test_call",
 	Run:  run,
 	Requires: []*analysis.Analyzer{
@@ -27,7 +26,7 @@ var Analyzer = &analysis.Analyzer{
 
 func Test(t *testing.T) {
 	testdata := analysistest.TestData()
-	analysistest.Run(t, testdata, Analyzer, "b")
+	analysistest.Run(t, testdata, analyzer, "b")
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
@@ -45,7 +44,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					continue
 				}
 				called, ok := analysisutil.CalledFrom(b, i, st, close)
-				log.Println(called, ok)
 				if !(called && ok) {
 					pass.Reportf(instr.Pos(), "close should be called after calling doSomething")
 				}
