@@ -7,9 +7,9 @@ import (
 
 // RemoVendor removes vendoring infomation from import path.
 func RemoveVendor(path string) string {
-	i := strings.Index(path, "vendor")
+	i := strings.Index(path, "vendor/")
 	if i >= 0 {
-		return path[i+len("vendor")+1:]
+		return path[i+len("vendor/"):]
 	}
 	return path
 }
