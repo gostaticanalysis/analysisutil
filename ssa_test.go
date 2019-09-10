@@ -70,9 +70,6 @@ func Test_Phi(t *testing.T) {
 func Test_BinOp(t *testing.T) {
 	type I = ssa.Instruction
 	var bo1, bo2 ssa.BinOp
-	var i = ssa.If{
-		Cond: &bo1,
-	}
 	tests := []struct {
 		name   string
 		instrs []ssa.Instruction
@@ -83,7 +80,9 @@ func Test_BinOp(t *testing.T) {
 		{"B_", []I{&bo1, nil}, []*ssa.BinOp{&bo1}},
 		{"_B", []I{nil, &bo1}, []*ssa.BinOp{&bo1}},
 		{"BB", []I{&bo1, &bo2}, []*ssa.BinOp{&bo1, &bo2}},
-		{"B_If", []I{&bo1, nil, &i}, []*ssa.BinOp{&bo1}},
+		{"B_If", []I{&bo1, nil, &ssa.If{
+			Cond: &bo1,
+		}}, []*ssa.BinOp{&bo1}},
 	}
 
 	for _, tt := range tests {
