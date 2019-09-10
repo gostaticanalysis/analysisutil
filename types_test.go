@@ -2,7 +2,6 @@ package analysisutil_test
 
 import (
 	"go/token"
-	"log"
 	"testing"
 
 	"github.com/gostaticanalysis/analysisutil"
@@ -40,8 +39,6 @@ func run_test_types(pass *analysis.Pass) (interface{}, error) {
 		{"vendored", "EOF", true},
 		{"c", "EOF", false},
 	}
-
-	log.Println(analysisutil.LookupFromImports(pass.Pkg.Imports(), "vendored", "EOF"))
 
 	for _, tt := range tests {
 		tt := tt
