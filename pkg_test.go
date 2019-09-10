@@ -128,7 +128,7 @@ func TestPkgUsedInFunc(t *testing.T) {
 	analysistest.Run(t, testdata, analyzer, "pkgused")
 }
 
-func TestPkgUsedInPass(t *testing.T) {
+func TestImported(t *testing.T) {
 	tests := []struct {
 		path string
 		used bool
@@ -142,7 +142,7 @@ func TestPkgUsedInPass(t *testing.T) {
 	run := func(pass *analysis.Pass) (interface{}, error) {
 		for _, tt := range tests {
 			t.Run(tt.path, func(t *testing.T) {
-				used := analysisutil.PkgUsedInPass(tt.path, pass)
+				used := analysisutil.Imported(tt.path, pass)
 				if used && !tt.used {
 					t.Error("not used")
 				} else if !used && tt.used {
