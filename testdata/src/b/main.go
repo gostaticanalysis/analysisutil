@@ -28,3 +28,11 @@ func test3() {
 	}
 	s.close()
 }
+
+func test4() {
+	var s = &st{}
+	s.doSomethingAndReturnSt() // want `close should be called after calling doSomethingAndReturnSt`
+	for i := 0; i < 3; i++ {
+		// simple loop to check if the analyzer properly stops and lints in cycle.
+	}
+}
