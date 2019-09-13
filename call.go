@@ -74,7 +74,7 @@ func (c *CalledChecker) From(b *ssa.BasicBlock, i int, receiver types.Type, meth
 		return false, false
 	}
 
-	if from.instrs(b.Instrs[i:]) ||
+	if from.instrs(b.Instrs[i+1:]) ||
 		from.succs(b) {
 		return true, true
 	}
