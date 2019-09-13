@@ -43,32 +43,21 @@ func (c *CalledChecker) Func(instr ssa.Instruction, recv ssa.Value, f *types.Fun
 	if recv != nil &&
 		common.Signature().Recv() != nil &&
 		(len(common.Args) == 0 && recv != nil || common.Args[0] != recv &&
-			!isReferrer(recv, common.Args[0])) {
+			!referrer(recv, common.Args[0])) {
 		return false
 	}
 
 	return fn == f
 }
 
-func isReferrer(a, b ssa.Value) bool {
+func referrer(a, b ssa.Value) bool {
+	return isReferrerOf(a, b) || isReferrerOf(b, a)
+}
+
+func isReferrerOf(a, b ssa.Value) bool {
 	if a == nil || b == nil {
 		return false
 	}
-	if a.Referrers() != nil {
-		ars := *a.Referrers()
-
-		for _, ar := range ars {
-			arv, ok := ar.(ssa.Value)
-			if !ok {
-				continue
-			}
-			if arv == b {
-				return true
-			}
-
-		}
-	}
-
 	if b.Referrers() != nil {
 		brs := *b.Referrers()
 
