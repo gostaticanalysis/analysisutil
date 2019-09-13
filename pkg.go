@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
-	"golang.org/x/tools/go/ssa"
 )
 
 // RemoVendor removes vendoring infomation from import path.
@@ -27,32 +26,6 @@ func LookupFromImports(imports []*types.Package, path, name string) types.Object
 		}
 	}
 	return nil
-}
-
-// PkgUsedInFunc returns true when the given f imports the pkg.
-func PkgUsedInFunc(pass *analysis.Pass, pkgPath string, f *ssa.Function) bool {
-	if f == nil {
-		return false
-	}
-	fo := f.Object()
-	if fo == nil {
-		return false
-	}
-
-	ff := File(pass, fo.Pos())
-	if ff == nil {
-		return false
-	}
-	for _, i := range ff.Imports {
-		path, err := strconv.Unquote(i.Path.Value)
-		if err != nil {
-			continue
-		}
-		if RemoveVendor(path) == pkgPath {
-			return true
-		}
-	}
-	return false
 }
 
 // Imported returns true when the given pass imports the pkg.
