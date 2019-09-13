@@ -3,15 +3,13 @@ package analysisutil
 import (
 	"go/types"
 	"strings"
-	"path/filepath"
 )
 
 // RemoVendor removes vendoring infomation from import path.
 func RemoveVendor(path string) string {
-	unixVendorPath := "vendor/"
-	i := strings.Index(path, filepath.FromSlash(unixVendorPath))
+	i := strings.Index(path, "vendor/")
 	if i >= 0 {
-		return path[i+len(unixVendorPath):]
+		return path[i+len("vendor/"):]
 	}
 	return path
 }
