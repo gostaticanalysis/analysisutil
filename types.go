@@ -16,7 +16,14 @@ func ImplementsError(t types.Type) bool {
 
 // ObjectOf returns types.Object by given name in the package.
 func ObjectOf(pass *analysis.Pass, pkg, name string) types.Object {
-	return LookupFromImports(pass.Pkg.Imports(), pkg, name)
+	obj := LookupFromImports(pass.Pkg.Imports(), pkg, name)
+	if obj != nil {
+		return obj
+	}
+	if RemoveVendor(pass.Pkg.Name()) != RemoveVendor(pkg) {
+		return nil
+	}
+	return pass.Pkg.Scope().Lookup(name)
 }
 
 // TypeOf returns types.Type by given name in the package.
