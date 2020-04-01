@@ -42,11 +42,36 @@ func (c *CalledChecker) Func(instr ssa.Instruction, recv ssa.Value, f *types.Fun
 
 	if recv != nil &&
 		common.Signature().Recv() != nil &&
-		(len(common.Args) == 0 || common.Args[0] != recv) {
+		(len(common.Args) == 0 && recv != nil || common.Args[0] != recv &&
+			!referrer(recv, common.Args[0])) {
 		return false
 	}
 
 	return fn == f
+}
+
+func referrer(a, b ssa.Value) bool {
+	return isReferrerOf(a, b) || isReferrerOf(b, a)
+}
+
+func isReferrerOf(a, b ssa.Value) bool {
+	if a == nil || b == nil {
+		return false
+	}
+	if b.Referrers() != nil {
+		brs := *b.Referrers()
+
+		for _, br := range brs {
+			brv, ok := br.(ssa.Value)
+			if !ok {
+				continue
+			}
+			if brv == a {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // From checks whether receiver's method is called in an instruction
@@ -173,7 +198,7 @@ func (c *calledFrom) succs(b *ssa.BasicBlock) bool {
 	}
 
 	if c.done[b] {
-		return false
+		return true
 	}
 	c.done[b] = true
 
