@@ -1,7 +1,7 @@
 package analysisutil_test
 
 import (
-	"go/types"
+	"errors"
 	"testing"
 
 	"github.com/gostaticanalysis/analysisutil"
@@ -10,13 +10,7 @@ import (
 	"golang.org/x/tools/go/analysis/passes/buildssa"
 )
 
-var (
-	st                     types.Type
-	close                  *types.Func
-	doSomethingAndReturnSt *types.Func
-)
-
-var analyzer = &analysis.Analyzer{
+var callAnalyzer = &analysis.Analyzer{
 	Name: "test_call",
 	Run:  run,
 	Requires: []*analysis.Analyzer{
@@ -26,24 +20,27 @@ var analyzer = &analysis.Analyzer{
 
 func Test(t *testing.T) {
 	testdata := analysistest.TestData()
-	analysistest.Run(t, testdata, analyzer, "b")
+	analysistest.Run(t, testdata, callAnalyzer, "call")
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
-	st = analysisutil.TypeOf(pass, "b", "*st")
-	close = analysisutil.MethodOf(st, "b.close")
-	doSomethingAndReturnSt = analysisutil.MethodOf(st, "b.doSomethingAndReturnSt")
+	resTyp := analysisutil.TypeOf(pass, "call", "*res")
+	if resTyp == nil {
+		return nil, errors.New("analyzer does not find *call.res type")
+	}
+
+	close := analysisutil.MethodOf(resTyp, "close")
+	if close == nil {
+		return nil, errors.New("analyzer does not find (call.res).close method")
+	}
 
 	funcs := pass.ResultOf[buildssa.Analyzer].(*buildssa.SSA).SrcFuncs
 	for _, f := range funcs {
 		for _, b := range f.Blocks {
 			for i, instr := range b.Instrs {
-				if !analysisutil.Called(instr, nil, doSomethingAndReturnSt) {
-					continue
-				}
-				called, ok := analysisutil.CalledFrom(b, i, st, close)
-				if !(called && ok) {
-					pass.Reportf(instr.Pos(), close.Name()+" should be called after calling "+doSomethingAndReturnSt.Name())
+				called, ok := analysisutil.CalledFrom(b, i, resTyp, close)
+				if ok && !called {
+					pass.Reportf(instr.Pos(), "NG")
 				}
 			}
 		}
