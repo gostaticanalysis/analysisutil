@@ -50,7 +50,7 @@ func MethodOf(typ types.Type, name string) *types.Func {
 	switch typ := typ.(type) {
 	case *types.Named:
 		for i := 0; i < typ.NumMethods(); i++ {
-			if f := typ.Method(i); f.Id() == name {
+			if f := typ.Method(i); f.Name() == name {
 				return f
 			}
 		}

@@ -12,7 +12,7 @@ import (
 
 const pkg = "objectof"
 
-var analyzer = &analysis.Analyzer{
+var typesAnalyzer = &analysis.Analyzer{
 	Name: "test_types",
 	Run:  run_test_types,
 	Requires: []*analysis.Analyzer{
@@ -22,7 +22,7 @@ var analyzer = &analysis.Analyzer{
 
 func Test_Types(t *testing.T) {
 	testdata := analysistest.TestData()
-	analysistest.Run(t, testdata, analyzer, pkg)
+	analysistest.Run(t, testdata, typesAnalyzer, pkg)
 }
 
 func run_test_types(pass *analysis.Pass) (interface{}, error) {
