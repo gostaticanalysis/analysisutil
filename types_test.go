@@ -38,6 +38,7 @@ func run_test_types(pass *analysis.Pass) (interface{}, error) {
 		{"a", "ok", false},
 		{"vendored", "EOF", true},
 		{"c", "EOF", false},
+		{"database/sql", "*DB", false},
 	}
 
 	for _, tt := range tests {
