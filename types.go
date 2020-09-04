@@ -37,7 +37,7 @@ func TypeOf(pass *analysis.Pass, pkg, name string) types.Type {
 		obj := TypeOf(pass, pkg, name[1:])
 		if obj == nil {
 			return nil
-		}else{
+		} else {
 			return types.NewPointer(obj)
 		}
 	}
