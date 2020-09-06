@@ -90,19 +90,8 @@ func (c *CalledChecker) From(b *ssa.BasicBlock, i int, receiver types.Type, meth
 		return false, false
 	}
 
-	if !identical(v.Type(), receiver) {
-		t, ok := v.Type().(*types.Tuple)
-		if !ok {
-			return false, false
-		}
-		for j := 0; j < t.Len(); j++ {
-			if identical(t.At(j).Type(), receiver) {
-				break
-			}
-			if j == t.Len()-1 {
-				return false, false
-			}
-		}
+	if !identical(v.Type(), receiver) && !identicalToTupleChild(v.Type(), receiver) {
+		return false, false
 	}
 
 	from := &calledFrom{recv: v, fs: methods, ignore: c.Ignore}
