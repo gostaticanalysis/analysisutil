@@ -144,3 +144,36 @@ func test16() {
 	r := newRes2() // want `NG`
 	_ = r
 }
+
+// embedded type
+type res3 struct{ res }
+
+func newRes3() *res3 {
+	return &res3{}
+}
+func test17() {
+	r := newRes3() // want `NG`
+	_ = r
+}
+
+// embedded type
+type res4 struct{ res }
+
+func newRes4() res4 {
+	return res4{}
+}
+func test18() {
+	r := newRes4() // want `NG`
+	_ = r
+}
+
+// embedded type
+type res5 struct{ *res2 }
+
+func newRes5() res5 {
+	return res5{}
+}
+func test19() {
+	r := newRes5() // want `NG`
+	_ = r
+}

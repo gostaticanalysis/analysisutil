@@ -12,8 +12,38 @@ type CalledChecker struct {
 	Ignore func(instr ssa.Instruction) bool
 }
 
+// NotIn checks whether receiver's method is called in a function.
+// If there is no methods calling at a path from an instruction
+// which type is receiver to all return instruction, NotIn returns these instructions.
+func (c *CalledChecker) NotIn(f *ssa.Function, receiver types.Type, methods ...*types.Func) []ssa.Instruction {
+	done := map[ssa.Value]bool{}
+	var instrs []ssa.Instruction
+	for _, b := range f.Blocks {
+		for i, instr := range b.Instrs {
+			v, _ := instr.(ssa.Value)
+			if v == nil || done[v] {
+				continue
+			}
+
+			if v, _ := v.(*ssa.UnOp); v != nil && done[v.X] {
+				continue
+			}
+
+			called, ok := c.From(b, i, receiver, methods...)
+			if ok && !called {
+				instrs = append(instrs, instr)
+				done[v] = true
+				if v, _ := v.(*ssa.UnOp); v != nil {
+					done[v.X] = true
+				}
+			}
+		}
+	}
+	return instrs
+}
+
 // Func returns true when f is called in the instr.
-// If recv is not nil, Called also checks the receiver.
+// If recv is not nil, Func also checks the receiver.
 func (c *CalledChecker) Func(instr ssa.Instruction, recv ssa.Value, f *types.Func) bool {
 
 	if c.Ignore != nil && c.Ignore(instr) {
@@ -90,11 +120,12 @@ func (c *CalledChecker) From(b *ssa.BasicBlock, i int, receiver types.Type, meth
 		return false, false
 	}
 
-	if !isRecv(receiver, v.Type()) {
+	from := &calledFrom{recv: v, fs: methods, ignore: c.Ignore}
+
+	if !from.isRecv(receiver, v.Type()) {
 		return false, false
 	}
 
-	from := &calledFrom{recv: v, fs: methods, ignore: c.Ignore}
 	if from.ignored() {
 		return false, false
 	}
@@ -156,8 +187,22 @@ func (c *calledFrom) isOwn(instr ssa.Instruction) bool {
 
 func (c *calledFrom) isRet(instr ssa.Instruction) bool {
 
-	ret, ok := instr.(*ssa.Return)
-	if !ok {
+	var ret *ssa.Return
+	switch instr := instr.(type) {
+	case *ssa.Return:
+		ret = instr
+	case *ssa.UnOp:
+		refs := instr.Referrers()
+		if refs == nil {
+			return false
+		}
+		for _, ref := range *refs {
+			if c.isRet(ref) {
+				return true
+			}
+		}
+		return false
+	default:
 		return false
 	}
 
@@ -165,6 +210,14 @@ func (c *calledFrom) isRet(instr ssa.Instruction) bool {
 		if r == c.recv {
 			return true
 		}
+
+		switch v := r.(type) {
+		case *ssa.UnOp:
+			if v.X == c.recv {
+				return true
+			}
+		}
+
 	}
 
 	return false
@@ -265,34 +318,19 @@ func (c *calledFrom) storedInSuccs(b *ssa.BasicBlock) bool {
 	return true
 }
 
-// CalledFrom checks whether receiver's method is called in an instruction
-// which belogns to after i-th instructions, or in succsor blocks of b.
-// The first result is above value.
-// The second result is whether type of i-th instruction does not much receiver
-// or matches with ignore cases.
-func CalledFrom(b *ssa.BasicBlock, i int, receiver types.Type, methods ...*types.Func) (called, ok bool) {
-	return new(CalledChecker).From(b, i, receiver, methods...)
-}
-
-// Called returns true when f is called in the instr.
-// If recv is not nil, Called also checks the receiver.
-func Called(instr ssa.Instruction, recv ssa.Value, f *types.Func) bool {
-	return new(CalledChecker).Func(instr, recv, f)
-}
-
-func isRecv(recv, typ types.Type) bool {
+func (c *calledFrom) isRecv(recv, typ types.Type) bool {
 	return recv == typ || identical(recv, typ) ||
-		isRecvInTuple(recv, typ) || isRecvInEmbedded(recv, typ)
+		c.isRecvInTuple(recv, typ) || c.isRecvInEmbedded(recv, typ)
 }
 
-func isRecvInTuple(recv, typ types.Type) bool {
+func (c *calledFrom) isRecvInTuple(recv, typ types.Type) bool {
 	tuple, _ := typ.(*types.Tuple)
 	if tuple == nil {
 		return false
 	}
 
 	for i := 0; i < tuple.Len(); i++ {
-		if isRecv(recv, tuple.At(i).Type()) {
+		if c.isRecv(recv, tuple.At(i).Type()) {
 			return true
 		}
 	}
@@ -300,16 +338,16 @@ func isRecvInTuple(recv, typ types.Type) bool {
 	return false
 }
 
-func isRecvInEmbedded(recv, typ types.Type) bool {
+func (c *calledFrom) isRecvInEmbedded(recv, typ types.Type) bool {
 
 	var st *types.Struct
 	switch typ := typ.(type) {
 	case *types.Struct:
 		st = typ
 	case *types.Pointer:
-		return isRecvInEmbedded(recv, typ.Elem())
+		return c.isRecvInEmbedded(recv, typ.Elem())
 	case *types.Named:
-		return isRecvInEmbedded(recv, typ.Underlying())
+		return c.isRecvInEmbedded(recv, typ.Underlying())
 	default:
 		return false
 	}
@@ -321,7 +359,7 @@ func isRecvInEmbedded(recv, typ types.Type) bool {
 		}
 
 		ft := field.Type()
-		if isRecv(recv, ft) {
+		if c.isRecv(recv, ft) {
 			return true
 		}
 
@@ -335,10 +373,32 @@ func isRecvInEmbedded(recv, typ types.Type) bool {
 			ptrOrUnptr = types.NewPointer(ft)
 		}
 
-		if isRecv(recv, ptrOrUnptr) {
+		if c.isRecv(recv, ptrOrUnptr) {
 			return true
 		}
 	}
 
 	return false
+}
+
+// NotCalledIn checks whether receiver's method is called in a function.
+// If there is no methods calling at a path from an instruction
+// which type is receiver to all return instruction, NotCalledIn returns these instructions.
+func NotCalledIn(f *ssa.Function, receiver types.Type, methods ...*types.Func) []ssa.Instruction {
+	return new(CalledChecker).NotIn(f, receiver, methods...)
+}
+
+// CalledFrom checks whether receiver's method is called in an instruction
+// which belogns to after i-th instructions, or in succsor blocks of b.
+// The first result is above value.
+// The second result is whether type of i-th instruction does not much receiver
+// or matches with ignore cases.
+func CalledFrom(b *ssa.BasicBlock, i int, receiver types.Type, methods ...*types.Func) (called, ok bool) {
+	return new(CalledChecker).From(b, i, receiver, methods...)
+}
+
+// Called returns true when f is called in the instr.
+// If recv is not nil, Called also checks the receiver.
+func Called(instr ssa.Instruction, recv ssa.Value, f *types.Func) bool {
+	return new(CalledChecker).Func(instr, recv, f)
 }
