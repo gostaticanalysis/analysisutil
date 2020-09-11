@@ -167,9 +167,10 @@ func (c *calledFrom) ignored() bool {
 	}
 
 	for _, ref := range *refs {
+		done := map[ssa.Instruction]bool{}
 		if !c.isOwn(ref) &&
 			((c.ignore != nil && c.ignore(ref)) ||
-				c.isRet(ref) || c.isArg(ref)) {
+				c.isRet(ref, done) || c.isArg(ref)) {
 			return true
 		}
 	}
@@ -185,41 +186,41 @@ func (c *calledFrom) isOwn(instr ssa.Instruction) bool {
 	return v == c.recv
 }
 
-func (c *calledFrom) isRet(instr ssa.Instruction) bool {
+func (c *calledFrom) isRet(instr ssa.Instruction, done map[ssa.Instruction]bool) bool {
+	if done[instr] {
+		return false
+	}
+	done[instr] = true
 
-	var ret *ssa.Return
 	switch instr := instr.(type) {
 	case *ssa.Return:
-		ret = instr
-	case *ssa.UnOp:
-		refs := instr.Referrers()
-		if refs == nil {
-			return false
+		return true
+	case *ssa.MapUpdate:
+		return c.isRetInRefs(instr.Map, done)
+	case *ssa.Store:
+		if instr, _ := instr.Addr.(ssa.Instruction); instr != nil {
+			return c.isRet(instr, done)
 		}
-		for _, ref := range *refs {
-			if c.isRet(ref) {
-				return true
-			}
-		}
-		return false
+		return c.isRetInRefs(instr.Addr, done)
+	case *ssa.FieldAddr:
+		return c.isRetInRefs(instr.X, done)
+	case ssa.Value:
+		return c.isRetInRefs(instr, done)
 	default:
 		return false
 	}
+}
 
-	for _, r := range ret.Results {
-		if r == c.recv {
+func (c *calledFrom) isRetInRefs(v ssa.Value, done map[ssa.Instruction]bool) bool {
+	refs := v.Referrers()
+	if refs == nil {
+		return false
+	}
+	for _, ref := range *refs {
+		if c.isRet(ref, done) {
 			return true
 		}
-
-		switch v := r.(type) {
-		case *ssa.UnOp:
-			if v.X == c.recv {
-				return true
-			}
-		}
-
 	}
-
 	return false
 }
 
