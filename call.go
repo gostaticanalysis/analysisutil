@@ -281,9 +281,6 @@ func Called(instr ssa.Instruction, recv ssa.Value, f *types.Func) bool {
 }
 
 func isRecv(recv, typ types.Type) bool {
-	if recv == typ || identical(recv, typ) {
-		return true
-	}
 	return recv == typ || identical(recv, typ) ||
 		isRecvInTuple(recv, typ) || isRecvInEmbedded(recv, typ)
 }
