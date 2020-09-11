@@ -90,7 +90,9 @@ func (c *CalledChecker) From(b *ssa.BasicBlock, i int, receiver types.Type, meth
 		return false, false
 	}
 
-	if !identical(v.Type(), receiver) && !identicalToTupleChild(v.Type(), receiver) {
+	// TODO(tenntenn): embeded type
+	if !identical(v.Type(), receiver) && 
+		!identicalToTupleChild(v.Type(), receiver) {
 		return false, false
 	}
 
