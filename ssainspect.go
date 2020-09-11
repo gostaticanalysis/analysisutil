@@ -22,7 +22,7 @@ func (ins *instrInspector) block(b *ssa.BasicBlock, i int, f func(i int, instr s
 	ins.done[b] = true
 	ins.instrs(i+1, b.Instrs[i+1:], f)
 	for _, s := range b.Succs {
-		InspectInstruction(s, 0, f)
+		ins.block(s, 0, f)
 	}
 
 }
