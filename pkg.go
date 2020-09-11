@@ -47,3 +47,8 @@ func Imported(pkgPath string, pass *analysis.Pass) bool {
 	}
 	return false
 }
+
+func IsTestPkg(pkg *types.Package) bool {
+	return strings.HasSuffix(pkg.Path(), "_test") ||
+		strings.HasSuffix(pkg.Path(), ".test")
+}

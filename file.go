@@ -16,3 +16,8 @@ func File(pass *analysis.Pass, pos token.Pos) *ast.File {
 	}
 	return nil
 }
+
+func IsTestFile(fset *token.FileSet, f *ast.File) bool {
+	tf := fset.File(f.Pos())
+	return strings.HasSuffix(tf.Name(), "_test.go") 
+}
