@@ -183,3 +183,62 @@ func test20() {
 	r := newRes() // want `NG`
 	_ = r
 }
+
+func test21() interface{} {
+	println("hello")
+	r := newRes()
+	return r
+}
+
+func test22() interface{} {
+	println("hello")
+	r := newRes()
+	return struct {
+		v *res
+	}{r}
+}
+
+func test23() interface{} {
+	println("hello")
+	r := newRes()
+	return struct {
+		v interface{}
+	}{r}
+}
+
+func test24() []*res {
+	r := newRes()
+	return []*res{r}
+}
+
+func test25() map[int]*res {
+	r := newRes()
+	return map[int]*res{0: r}
+}
+
+func test26() []*res {
+	r := newRes()
+	s := []*res{nil}
+	s[0] = r
+	return s
+}
+
+func test27() [1]*res {
+	r := newRes()
+	return [...]*res{r}
+}
+
+func test28() interface{} {
+	r := newRes()
+	return []*res{0:r}
+}
+
+func test29() (*res, int) {
+	r := newRes()
+	return r, 1
+}
+
+func test30() (r *res) {
+	r = newRes()
+	return
+}
