@@ -12,7 +12,7 @@ import (
 
 var callAnalyzer = &analysis.Analyzer{
 	Name: "test_call",
-	Run:  run,
+	Run:  callAnalyzerRun,
 	Requires: []*analysis.Analyzer{
 		buildssa.Analyzer,
 	},
@@ -23,7 +23,7 @@ func TestCall(t *testing.T) {
 	analysistest.Run(t, testdata, callAnalyzer, "call")
 }
 
-func run(pass *analysis.Pass) (interface{}, error) {
+func callAnalyzerRun(pass *analysis.Pass) (interface{}, error) {
 	resTyp := analysisutil.TypeOf(pass, "call", "*res")
 	if resTyp == nil {
 		return nil, errors.New("analyzer does not find *call.res type")

@@ -177,3 +177,9 @@ func test19() {
 	r := newRes5() // want `NG`
 	_ = r
 }
+
+func test20() {
+	println("hello")
+	r := newRes() // want `NG`
+	_ = r
+}
