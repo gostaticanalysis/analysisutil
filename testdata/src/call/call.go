@@ -3,7 +3,7 @@ package call
 var Flag bool
 
 // res is a resource which must be closed after using.
-type res struct {}
+type res struct{}
 
 func newRes() *res {
 	return &res{}
@@ -23,13 +23,15 @@ func test2() {
 
 func test3() {
 	r := newRes() // want `NG`
-	for i := 0; i < 3; i++ {}
+	for i := 0; i < 3; i++ {
+	}
 	_ = r
 }
 
 func test4() {
 	r := newRes() // OK
-	for i := 0; i < 3; i++ {}
+	for i := 0; i < 3; i++ {
+	}
 	r.close()
 }
 
@@ -37,7 +39,7 @@ func test5() {
 	r := newRes() // want `NG`
 	if Flag {
 		// this flow does not close res
-		return 
+		return
 	}
 	r.close()
 }
@@ -46,7 +48,7 @@ func test6() {
 	r := newRes() // OK
 	if Flag {
 		r.close()
-		return 
+		return
 	}
 	r.close()
 }
@@ -55,7 +57,7 @@ func test7() {
 	r := newRes() // OK
 	defer r.close()
 	if Flag {
-		return 
+		return
 	}
 }
 
@@ -126,7 +128,58 @@ func test14() {
 }
 
 var pkgRes = newRes()
+
 func test15() {
 	r := pkgRes // OK (package variable)
+	_ = r
+}
+
+// embedded type
+type res2 struct{ *res }
+
+func newRes2() *res2 {
+	return &res2{newRes()}
+}
+func test16() {
+	r := newRes2() // want `NG`
+	_ = r
+}
+
+// embedded type
+type res3 struct{ res }
+
+func newRes3() *res3 {
+	return &res3{}
+}
+func test17() {
+	r := newRes3() // want `NG`
+	_ = r
+}
+
+// embedded type
+type res4 struct{ res }
+
+func newRes4() res4 {
+	return res4{}
+}
+func test18() {
+	r := newRes4() // want `NG`
+	_ = r
+}
+
+// embedded type
+type res5 struct{ *res2 }
+
+func newRes5() res5 {
+	return res5{}
+}
+func test19() {
+	r := newRes5() // want `NG`
+	_ = r
+}
+
+func test20() {
+	println("hello")
+	r := newRes() // want `NG`
 	_ = r
 }

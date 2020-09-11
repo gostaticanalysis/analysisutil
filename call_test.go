@@ -12,18 +12,18 @@ import (
 
 var callAnalyzer = &analysis.Analyzer{
 	Name: "test_call",
-	Run:  run,
+	Run:  callAnalyzerRun,
 	Requires: []*analysis.Analyzer{
 		buildssa.Analyzer,
 	},
 }
 
-func Test(t *testing.T) {
+func TestCall(t *testing.T) {
 	testdata := analysistest.TestData()
 	analysistest.Run(t, testdata, callAnalyzer, "call")
 }
 
-func run(pass *analysis.Pass) (interface{}, error) {
+func callAnalyzerRun(pass *analysis.Pass) (interface{}, error) {
 	resTyp := analysisutil.TypeOf(pass, "call", "*res")
 	if resTyp == nil {
 		return nil, errors.New("analyzer does not find *call.res type")
@@ -36,13 +36,9 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 	funcs := pass.ResultOf[buildssa.Analyzer].(*buildssa.SSA).SrcFuncs
 	for _, f := range funcs {
-		for _, b := range f.Blocks {
-			for i, instr := range b.Instrs {
-				called, ok := analysisutil.CalledFrom(b, i, resTyp, close)
-				if ok && !called {
-					pass.Reportf(instr.Pos(), "NG")
-				}
-			}
+		instrs := analysisutil.NotCalledIn(f, resTyp, close)
+		for _, instr := range instrs {
+			pass.Reportf(instr.Pos(), "NG")
 		}
 	}
 
