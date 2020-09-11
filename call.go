@@ -90,7 +90,7 @@ func (c *CalledChecker) From(b *ssa.BasicBlock, i int, receiver types.Type, meth
 		return false, false
 	}
 
-	if !identical(v.Type(), receiver) && !identicalToTupleChild(v.Type(), receiver) {
+	if !isRecv(receiver, v.Type()) {
 		return false, false
 	}
 
@@ -278,4 +278,70 @@ func CalledFrom(b *ssa.BasicBlock, i int, receiver types.Type, methods ...*types
 // If recv is not nil, Called also checks the receiver.
 func Called(instr ssa.Instruction, recv ssa.Value, f *types.Func) bool {
 	return new(CalledChecker).Func(instr, recv, f)
+}
+
+func isRecv(recv, typ types.Type) bool {
+	if recv == typ || identical(recv, typ) {
+		return true
+	}
+	return recv == typ || identical(recv, typ) ||
+		isRecvInTuple(recv, typ) || isRecvInEmbedded(recv, typ)
+}
+
+func isRecvInTuple(recv, typ types.Type) bool {
+	tuple, _ := typ.(*types.Tuple)
+	if tuple == nil {
+		return false
+	}
+
+	for i := 0; i < tuple.Len(); i++ {
+		if isRecv(recv, tuple.At(i).Type()) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isRecvInEmbedded(recv, typ types.Type) bool {
+
+	var st *types.Struct
+	switch typ := typ.(type) {
+	case *types.Struct:
+		st = typ
+	case *types.Pointer:
+		return isRecvInEmbedded(recv, typ.Elem())
+	case *types.Named:
+		return isRecvInEmbedded(recv, typ.Underlying())
+	default:
+		return false
+	}
+
+	for i := 0; i < st.NumFields(); i++ {
+		field := st.Field(i)
+		if !field.Embedded() {
+			continue
+		}
+
+		ft := field.Type()
+		if isRecv(recv, ft) {
+			return true
+		}
+
+		var ptrOrUnptr types.Type
+		switch ft := ft.(type) {
+		case *types.Pointer:
+			// struct { *T } -> T
+			ptrOrUnptr = ft.Elem()
+		default:
+			// struct { T } -> *T
+			ptrOrUnptr = types.NewPointer(ft)
+		}
+
+		if isRecv(recv, ptrOrUnptr) {
+			return true
+		}
+	}
+
+	return false
 }
