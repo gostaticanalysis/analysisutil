@@ -104,9 +104,27 @@ func (c *CalledChecker) From(b *ssa.BasicBlock, i int, receiver types.Type, meth
 		return true, true
 	}
 
-	from.done = nil
-	if from.storedInInstrs(b.Instrs[i+1:]) ||
-		from.storedInSuccs(b) {
+	/*
+		from.done = nil
+		if from.storedInInstrs(b.Instrs[i+1:]) ||
+			from.storedInSuccs(b) {
+			return false, false
+		}
+	*/
+
+	var isStored bool
+	InspectInstruction(b, i, func(i int, instr ssa.Instruction) bool {
+		switch instr := instr.(type) {
+		case *ssa.Store:
+			if instr.Val != v {
+				return true
+			}
+			isStored = true
+		}
+		return true
+	})
+
+	if isStored {
 		return false, false
 	}
 

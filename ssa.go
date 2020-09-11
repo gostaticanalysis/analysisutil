@@ -1,6 +1,8 @@
 package analysisutil
 
 import (
+	"go/token"
+
 	"golang.org/x/tools/go/ssa"
 )
 
@@ -72,7 +74,7 @@ func returnsInBlock(b *ssa.BasicBlock, done map[*ssa.BasicBlock]bool) (rets []*s
 }
 
 // BinOp returns binary operator values which are contained in the block b.
-func BinOp(b *ssa.BasicBlock) ([]*ssa.BinOp) {
+func BinOp(b *ssa.BasicBlock) []*ssa.BinOp {
 	var binops []*ssa.BinOp
 	for _, instr := range b.Instrs {
 		if binop, ok := instr.(*ssa.BinOp); ok {
@@ -80,4 +82,18 @@ func BinOp(b *ssa.BasicBlock) ([]*ssa.BinOp) {
 		}
 	}
 	return binops
+}
+
+func Dereference(b *ssa.BasicBlock, i int, addr ssa.Value) (unop *ssa.UnOp) {
+	InspectInstruction(b, i, func(i int, instr ssa.Instruction) bool {
+		switch instr := instr.(type) {
+		case *ssa.UnOp:
+			if instr.Op == token.MUL && instr.X == addr {
+				unop = instr // return value of Dereference
+				return false
+			}
+		}
+		return true
+	})
+	return
 }

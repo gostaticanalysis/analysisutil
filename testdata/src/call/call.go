@@ -3,7 +3,7 @@ package call
 var Flag bool
 
 // res is a resource which must be closed after using.
-type res struct {}
+type res struct{}
 
 func newRes() *res {
 	return &res{}
@@ -23,13 +23,15 @@ func test2() {
 
 func test3() {
 	r := newRes() // want `NG`
-	for i := 0; i < 3; i++ {}
+	for i := 0; i < 3; i++ {
+	}
 	_ = r
 }
 
 func test4() {
 	r := newRes() // OK
-	for i := 0; i < 3; i++ {}
+	for i := 0; i < 3; i++ {
+	}
 	r.close()
 }
 
@@ -37,7 +39,7 @@ func test5() {
 	r := newRes() // want `NG`
 	if Flag {
 		// this flow does not close res
-		return 
+		return
 	}
 	r.close()
 }
@@ -46,7 +48,7 @@ func test6() {
 	r := newRes() // OK
 	if Flag {
 		r.close()
-		return 
+		return
 	}
 	r.close()
 }
@@ -55,7 +57,7 @@ func test7() {
 	r := newRes() // OK
 	defer r.close()
 	if Flag {
-		return 
+		return
 	}
 }
 
@@ -68,7 +70,7 @@ func test8() {
 }
 
 func test9() {
-	r := newRes() // NG
+	r := newRes() // want `NG`
 	func() {
 		func(r *res) {}(r)
 	}()
@@ -88,7 +90,7 @@ func test10() {
 }
 
 func test11() {
-	r := newRes() // NG
+	r := newRes() // want `NG`
 
 	if Flag { // divide into multiple blocks
 		println("hoge")
@@ -126,7 +128,15 @@ func test14() {
 }
 
 var pkgRes = newRes()
+
 func test15() {
 	r := pkgRes // OK (package variable)
 	_ = r
+}
+
+func test16() interface{} {
+	r := newRes() // want `NG`
+	return struct{ r *res }{
+		r: r,
+	}
 }
