@@ -5,6 +5,9 @@ import (
 	"testing"
 
 	"github.com/gostaticanalysis/analysisutil"
+	"golang.org/x/tools/go/analysis"
+	"golang.org/x/tools/go/analysis/analysistest"
+	"golang.org/x/tools/go/analysis/passes/buildssa"
 	"golang.org/x/tools/go/ssa"
 )
 
@@ -96,4 +99,28 @@ func Test_BinOp(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUsed(t *testing.T) {
+	a := &analysis.Analyzer{
+		Name:     "used",
+		Requires: []*analysis.Analyzer{buildssa.Analyzer},
+		Run: func(pass *analysis.Pass) (interface{}, error) {
+			srcFuncs := pass.ResultOf[buildssa.Analyzer].(*buildssa.SSA).SrcFuncs
+			for _, f := range srcFuncs {
+				if len(f.Params) != 1 {
+					continue
+				}
+				v := f.Params[0]
+				for _, b := range f.Blocks {
+					if analysisutil.Used(v, b) != nil {
+						pass.Reportf(v.Pos(), "used")
+					}
+				}
+			}
+			return nil, nil
+		},
+	}
+	testdata := analysistest.TestData()
+	analysistest.Run(t, testdata, a, "used")
 }
