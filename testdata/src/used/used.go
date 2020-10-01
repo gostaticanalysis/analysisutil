@@ -46,3 +46,9 @@ func f8(v interface{}) { // want "used"
 		println(v)
 	}()
 }
+
+func f9(v interface{}) { // want "used"
+	func(v interface{}) { // want "used"
+		println(v)
+	}(v)
+}

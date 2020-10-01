@@ -109,6 +109,12 @@ func usedInInstr(v ssa.Value, instr ssa.Instruction) ssa.Instruction {
 			}
 		}
 	}
+
+	switch v := v.(type) {
+	case *ssa.UnOp:
+		return usedInInstr(v.X, instr)
+	}
+
 	return nil
 }
 
