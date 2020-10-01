@@ -113,7 +113,7 @@ func TestUsed(t *testing.T) {
 				}
 				v := f.Params[0]
 				for _, b := range f.Blocks {
-					if analysisutil.Used(v, b) != nil {
+					if analysisutil.Used(v, b.Instrs) != nil {
 						pass.Reportf(v.Pos(), "used")
 					}
 				}

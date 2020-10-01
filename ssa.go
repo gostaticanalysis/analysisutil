@@ -82,9 +82,8 @@ func BinOp(b *ssa.BasicBlock) []*ssa.BinOp {
 	return binops
 }
 
-// Used returns an instruction which uses the value in the block.
-func Used(v ssa.Value, b *ssa.BasicBlock) ssa.Instruction {
-	instrs := b.Instrs[:len(b.Instrs)]
+// Used returns an instruction which uses the value in the instructions.
+func Used(v ssa.Value, instrs []ssa.Instruction) ssa.Instruction {
 	if len(instrs) == 0 || v.Referrers() == nil {
 		return nil
 	}
@@ -132,7 +131,7 @@ func usedInClosure(v ssa.Value, instr *ssa.MakeClosure) ssa.Instruction {
 	}
 
 	for _, b := range fn.Blocks {
-		if used := Used(fv, b); used != nil {
+		if used := Used(fv, b.Instrs); used != nil {
 			return used
 		}
 	}
