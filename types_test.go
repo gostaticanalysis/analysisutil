@@ -115,3 +115,58 @@ func TestUnder(t *testing.T) {
 		})
 	}
 }
+
+func TestField(t *testing.T) {
+	t.Parallel()
+
+	lookup := func(pass *analysis.Pass, n string) (types.Type, error) {
+		_, obj := pass.Pkg.Scope().LookupParent(n, token.NoPos)
+		if obj == nil {
+			return nil, fmt.Errorf("does not find: %s", n)
+		}
+		return obj.Type(), nil
+	}
+
+	cases := map[string]struct {
+		src   string
+		typ   string
+		field string
+		want  int
+	}{
+		"nomarl":     {"type a struct{n int}", "a", "n", 0},
+		"nofield":    {"type a struct{n int}", "a", "m", -1},
+		"empty":      {"type a struct{}", "a", "n", -1},
+		"two":        {"type a struct{n, m int}", "a", "m", 1},
+		"nonamed":    {"var a struct{n, m int}", "a", "m", 1},
+		"ptr":        {"var a *struct{n, m int}", "a", "m", 1},
+		"namednamed": {"type a struct{n int}; type b a", "b", "n", 0},
+		"alias":      {"type a struct{n int}; type b = a", "b", "n", 0},
+	}
+
+	for name, tt := range cases {
+		name, tt := name, tt
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			a := &analysis.Analyzer{
+				Name: name + "Analyzer",
+				Run: func(pass *analysis.Pass) (interface{}, error) {
+					typ, err := lookup(pass, tt.typ)
+					if err != nil {
+						return nil, err
+					}
+
+					got, _ := analysisutil.Field(typ, tt.field)
+					if tt.want != got {
+						return nil, fmt.Errorf("want %v but got %v", tt.want, got)
+					}
+					return nil, nil
+				},
+			}
+			path := filepath.Join(name, name+".go")
+			dir := WriteFiles(t, map[string]string{
+				path: fmt.Sprintf("package %s\n%s", name, tt.src),
+			})
+			analysistest.Run(t, dir, a, name)
+		})
+	}
+}
