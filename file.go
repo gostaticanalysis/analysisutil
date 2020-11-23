@@ -28,8 +28,3 @@ func IsGeneratedFile(file *ast.File) bool {
 	}
 	return genCommentRegexp.MatchString(file.Doc.List[0].Text)
 }
-
-// IsGenerated reports whether a file which include pos has been generated automatically.
-func IsGenerated(pass *analysis.Pass, pos token.Pos) bool {
-	return IsGeneratedFile(File(pass, pos))
-}
