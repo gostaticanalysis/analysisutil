@@ -23,8 +23,8 @@ var genCommentRegexp = regexp.MustCompile(`^// Code generated .* DO NOT EDIT\.$`
 // IsGeneratedFile reports whether the file has been generated automatically.
 // If file is nil, IsGeneratedFile will return false.
 func IsGeneratedFile(file *ast.File) bool {
-	if file == nil || file.Doc == nil {
+	if file == nil || len(file.Comments) == 0 {
 		return false
 	}
-	return genCommentRegexp.MatchString(file.Doc.List[0].Text)
+	return genCommentRegexp.MatchString(file.Comments[0].List[0].Text)
 }
