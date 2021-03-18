@@ -132,7 +132,7 @@ func HasField(s *types.Struct, f *types.Var) bool {
 }
 
 // Field returns field of the struct type.
-// If the type is not struct or has not the field, 
+// If the type is not struct or has not the field,
 // Field returns -1, nil.
 // If the type is a named type or a pointer type,
 // Field calls itself recursively with
@@ -222,11 +222,7 @@ func mergeTypesInfo(i1, i2 *types.Info) {
 }
 
 // Under returns the most bottom underlying type.
+// Deprecated: (types.Type).Underlying returns same value of it.
 func Under(t types.Type) types.Type {
-	switch t := t.(type) {
-	case *types.Named:
-		return Under(t.Underlying())
-	default:
-		return t
-	}
+	return t.Underlying()
 }
