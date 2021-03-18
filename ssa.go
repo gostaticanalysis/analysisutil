@@ -59,7 +59,7 @@ func returnsInBlock(b *ssa.BasicBlock, done map[*ssa.BasicBlock]bool) (rets []*s
 	}
 	done[b] = true
 
-	if len(b.Preds) == 0 {
+	if b.Index != 0 && len(b.Preds) == 0 {
 		return nil
 	}
 
