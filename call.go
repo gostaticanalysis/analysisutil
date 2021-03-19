@@ -275,13 +275,14 @@ func (c *calledFrom) succs(b *ssa.BasicBlock) bool {
 		return false
 	}
 
+	var called bool
 	for _, s := range b.Succs {
-		if !c.instrs(s.Instrs) && !c.succs(s) {
-			return false
+		if c.instrs(s.Instrs) || c.succs(s) {
+			called = true
 		}
 	}
 
-	return true
+	return called
 }
 
 func (c *calledFrom) storedInInstrs(instrs []ssa.Instruction) bool {
