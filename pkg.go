@@ -8,7 +8,7 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
-// RemoVendor removes vendoring information from import path.
+// RemoveVendor removes vendoring information from import path.
 func RemoveVendor(path string) string {
 	i := strings.Index(path, "vendor/")
 	if i >= 0 {
