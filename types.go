@@ -20,7 +20,7 @@ func ObjectOf(pass *analysis.Pass, pkg, name string) types.Object {
 	if obj != nil {
 		return obj
 	}
-	if RemoveVendor(pass.Pkg.Name()) != RemoveVendor(pkg) {
+	if RemoveVendor(pass.Pkg.Path()) != RemoveVendor(pkg) {
 		return nil
 	}
 	return pass.Pkg.Scope().Lookup(name)
